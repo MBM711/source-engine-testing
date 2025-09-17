@@ -33,7 +33,7 @@ jobs:
         scripts/build-android-armv7a.sh
 
   build-windows-i386:
-    runs-on: windows-2019
+    runs-on: windows-2025
 
     steps:
     - uses: actions/checkout@v2
@@ -44,7 +44,7 @@ jobs:
         ./waf.bat build
 
   build-windows-amd64:
-    runs-on: windows-2019
+    runs-on: windows-2025
 
     steps:
     - uses: actions/checkout@v2
