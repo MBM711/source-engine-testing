@@ -1,0 +1,152 @@
+name: Build
+
+on: [push, pull_request]
+
+jobs:
+  build-linux-i386:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build linux-i386
+      run: |
+        scripts/build-ubuntu-i386.sh
+
+  build-linux-amd64:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build linux-amd64
+      run: |
+        scripts/build-ubuntu-amd64.sh
+
+  build-android-armv7a:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build android-armv7a
+      run: |
+        scripts/build-android-armv7a.sh
+
+  build-windows-i386:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build windows-i386
+      run: |
+        git submodule init && git submodule update
+        ./waf.bat configure -T debug --32bits
+        ./waf.bat build
+
+  build-windows-amd64:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build windows-amd64
+      run: |
+        git submodule init && git submodule update
+        ./waf.bat configure -T debug
+        ./waf.bat build
+
+  build-dedicated-windows-i386:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build dedicated windows-i386
+      run: |
+        git submodule init && git submodule update
+        ./waf.bat configure -T debug -d --32bits
+        ./waf.bat build
+
+  build-dedicated-windows-amd64:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build dedicated windows-amd64
+      run: |
+        git submodule init && git submodule update
+        ./waf.bat configure -T debug -d
+        ./waf.bat build
+
+  build-dedicated-linux-i386:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build dedicated linux-i386
+      run: |
+        scripts/build-ubuntu-i386.sh -d
+
+  build-dedicated-linux-amd64:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build dedicated linux-amd64
+      run: |
+        scripts/build-ubuntu-amd64.sh -d
+
+  build-macos-amd64:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build macos-amd64
+      run: |
+        scripts/build-macos-amd64.sh
+
+  build-dedicated-macos-amd64:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build dedicated macos-amd64
+      run: |
+        scripts/build-macos-amd64.sh -d
+
+  build-windows-exe:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install MinGW
+      run: sudo apt-get update && sudo apt-get install -y mingw-w64
+    - name: Build .exe (cross-compile)
+      run: |
+        mkdir -p build/windows
+        x86_64-w64-mingw32-g++ src/main.cpp -o build/windows/source-engine.exe
+        # Ajusta src/main.cpp por tu punto de entrada real
+    - name: Upload EXE artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: source-engine-exe
+        path: build/windows/source-engine.exe
+
+  build-android-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+    - name: Build APK
+      run: |
+        cd android
+        ./gradlew assembleDebug
+        # Ajusta la ruta si tu proyecto Android está en otro lado
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: source-engine-apk
+        path: android/app/build/outputs/apk/debug/app-debug.apk
