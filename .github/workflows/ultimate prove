@@ -1,0 +1,76 @@
+name: Build APK and EXE
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    name: Build APK (Android)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Build APK
+        run: |
+          # Si tienes build.gradle, usa esto:
+          ./gradlew assembleRelease
+          # Si tienes NDK/CMake, reemplaza por el comando de build adecuado
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: APKs
+          path: |
+            app/build/outputs/apk/**/*.apk
+            */build/outputs/apk/**/*.apk
+
+  build-exe:
+    runs-on: ubuntu-latest
+    name: Build EXE (Windows cross)
+    strategy:
+      matrix:
+        arch: [x86_64, i686, aarch64]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MinGW-w64 for ${{ matrix.arch }}
+        run: |
+          sudo apt-get update
+          case "${{ matrix.arch }}" in
+            x86_64) sudo apt-get install -y mingw-w64 ;;
+            i686) sudo apt-get install -y gcc-mingw-w64-i686 g++-mingw-w64-i686 ;;
+            aarch64) sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu ;;
+          esac
+      - name: Build .exe for ${{ matrix.arch }}
+        run: |
+          mkdir -p build-${{ matrix.arch }}
+          cd build-${{ matrix.arch }}
+          # Si usas CMake:
+          case "${{ matrix.arch }}" in
+            x86_64)
+              cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-mingw64.cmake
+              cmake --build . --config Release
+              ;;
+            i686)
+              cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-mingw32.cmake
+              cmake --build . --config Release
+              ;;
+            aarch64)
+              cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/Toolchain-mingw64-aarch64.cmake
+              cmake --build . --config Release
+              ;;
+          esac
+          # Cambia por tu sistema de build si es necesario (Makefile, etc)
+      - name: Upload EXE for ${{ matrix.arch }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: exe-${{ matrix.arch }}
+          path: build-${{ matrix.arch }}/**/*.exe
