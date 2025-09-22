@@ -17,6 +17,38 @@ jobs:
           - os: windows-latest
             cc: cl
             cxx: cl
+    env:
+      CC: ${{ matrix.cc }}
+      CXX: ${{ matrix.cxx }}
+      STEAMRT_SNAPSHOT: latest-steam-client-general-availability
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Checkout steam-runtime
+      if: startsWith(matrix.os, 'ubuntu')
+      uses: actions/checkout@v4
+      with:
+        repository: ValveSoftware/steam-runtime
+        path: steam-runtime
+    - name: Cache steam-runtime
+      if: startsWith(matrix.os, 'ubuntu')
+      id: cache-steam-runtime
+      uses: actions/cache@v4
+      with:
+        path: com.valvesoftware.SteamRuntime.Sdk-i386-scout-sysroot.tar.gz
+        key: steam-runtime-${{ env.STEAMRT_SNAPSHOT }}
+    - name: Download steam-runtime
+      if: startsWith(matrix.os, 'ubuntu') && steps.cache-steam-runtime.outputs.cache-hit != 'true'
+      run: wget --no-verbose https://repo.steampowered.com/steamrt-images-scout/snapshots/${{ env.STEAMRT_SNAPSHOT }}/com.valvesoftware.SteamRuntime.Sdk-i386-scout-sysroot.tar.gz
+    - name: Install steam runtime
+      if: startsWith(matrix.os, 'ubuntu')
+      run: |
+        sudo apt update
+        ./steam-runtime/setup_chroot.sh --i386 --tarball ./com.valvesoftware.SteamRuntime.Sdk-i386-scout-sysroot.tar.gz
+        sudo sed -i 's/groups=sudo/groups=adm/g' /etc/schroot/chroot.d/steamrt_scout_i386.conf
   build-linux-i386:
     runs-on: ubuntu-latest
 
