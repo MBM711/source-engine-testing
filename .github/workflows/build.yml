@@ -1,7 +1,22 @@
 name: Build
 
 on: [push, pull_request]
+
 jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cc: gcc
+            cxx: g++
+          - os: ubuntu-latest
+            cc: clang
+            cxx: clang++
+          - os: windows-latest
+            cc: cl
+            cxx: cl
   build-linux-i386:
     runs-on: ubuntu-latest
 
